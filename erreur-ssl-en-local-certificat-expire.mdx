@@ -1,0 +1,19 @@
+---
+draft: true
+layout: "../../layouts/PostLayout.astro"
+title: "Erreur SSL en local: le certificat est expiré"
+publishDate: 2023/01/13
+description: "En tentant d'appeler une API externe depuis un environnement local, cURL pourrait nous lancer une exception de certificat expiré."
+author: "Rachid Sebbouh"
+tags: ["laragon"]
+---
+Si vous êtes déjà tombé sur une erreur similaire à celle ci:
+
+`local.ERROR: cURL error 60: SSL certificate problem: certificate has expired`
+
+Je vais vous montrer la très simple recette à suivre pour obtenir un certificat à jour et revoir Laragon fonctionner à nouveau :
+
+- Se rendre sur [la page de téléchargement de certificat de cURL](https://curl.se/docs/caextract.html) _(curl / Docs / Protocols / CA Extract)_
+- Télécharger le fichier `cacert.pem`
+- L'enregistrer dans le dossier `ssl`, par défaut sur Laragon: `C:\laragon\etc\ssl`
+- Redémarrer Laragon et tout devrait fonctionner de nouveau

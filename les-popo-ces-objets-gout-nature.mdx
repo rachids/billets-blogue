@@ -1,0 +1,215 @@
+---
+spotlight: true
+layout: '../../layouts/PostLayout.astro'
+title: ' Le POPO : ce bon vieil objet PHP'
+publishDate: 2022/07/01
+description: "Je me suis récemment demandé comment rendre un array plus facilement manipulable par mes objets. Et j'ai découvert ces fameux POPO: les Plain-Old PHP Object."
+tags: ["php"]
+credits: { title: "Ressources", links: [
+    {
+        label: "Cet article de Vladimir Khorikov",
+        url: "https://enterprisecraftsmanship.com/posts/dto-vs-value-object-vs-poco/",
+    },
+    {
+        label: "Cette conférence de Matt Stauffer",
+        url: "https://enterprisecraftsmanship.com/posts/dto-vs-value-object-vs-poco/",
+    },
+    {
+        label: "Et bien sûr, le tonton Martin Fowler",
+        url: "https://martinfowler.com/bliki/POJO.html",
+    },
+]}
+---
+
+C'est plutôt bien pratique les [arrays](https://fr.php.net/array). On peut y mettre toutes les données qu'on souhaite, avec ou sans clés, et c'est une structure hyper répandue.
+
+Avant quand je voulais passer des données à un objet je le faisais à base d'arrays :
+
+```php
+class MonObjet
+
+{
+
+  public function bidouille(array $user)
+
+  {
+
+    // toutes ces données dans seulement 4 caractères... l'audace, la fougue.
+
+    if ($user["element_super_important_big"] === 93) {
+
+      win();
+
+    }
+
+  }
+
+}
+```
+
+Mais ça, c'était avant. Depuis je nomme bien mieux mes variables.
+
+J'ai aussi découvert une façon astucieuse de trimballer des données de méthode en méthode, en m'assurant à la fois que la structure des données est telle que je l'attends mais qu'en plus je peux avoir l'autocomplétion ou même centraliser des manips sur ces données grâce au POPO !
+
+## Les POPOs : Plain-Old PHP Object
+
+> On doit l'origine de ce concept à Martin Fowler, Rebecca Parsons, et Josh MacKenzie, qui ont créé le POJO pour Java.
+
+Un POPO comme son nom l'indique est tout simplement un objet qui va définir une structure de données
+Ce serait comme un array dopé aux amphétamines (en vrai tout simplement une représentation objet de ces données). Ça peut aussi être un objet qui va contenir un algorithme derrière un nom plus parlant pour que la lisibilité du code soit meilleure. Dans cet article, j'en parle surtout comme méthode pour définir une structure de données.
+
+Pour en construire un rien de plus simple, on se fait une classe qui représente notre structure de données. C'est donc un objet qui va venir exposer une signature pour accéder aux données, que ce soit à travers des attributs publics ou bien des _getters_ :
+
+```php
+namespace Rachids/Popo;
+
+ 
+
+class User
+
+{
+
+  public function __construct(
+
+    public readonly string $name,
+
+    public readonly string $email,
+
+    public readonly int $chiffrePrefereEntre_1_et_100,
+
+  )
+
+  {
+
+  }
+
+}
+```
+
+Avec un tel objet, je peux maintenant transmettre mes données d'une méthode à l'autre, en sachant exactement quels sont les différents éléments qui composent ces données.
+
+> La mention `readonly` rend cet objet immutable et garanti que le _popo_ ne sera plus altéré après sa création.
+
+Si on reprend mon exemple de bidouille en introduction, je peux me créer un objet qui va représenter ce que $data représente si je devais l'expliquer à quelqu'un et je le passe à ma méthode. On voit déjà que c'est plus compréhensible :
+
+```php
+namespace Rachids/System;
+
+ 
+
+use Rachids/Popo/User;
+
+ 
+
+class MonObjet
+
+{
+
+  public function bidouille(User $userPOPO)
+
+  {
+
+    // conseil: ne nommer jamais de variable comme ça, pas même pour illustrer un billet de blog.
+
+    if ($user->chiffrePrefereEntre_1_et_100 === 93) {
+
+      win();
+
+    }
+
+  }
+
+}
+```
+
+Comme je le disait plus haut, on peut même y ajouter un peu de logique pour manipuler ces données de la façon dont on le souhaite :
+
+```php
+namespace Rachids/LesPOPOS;
+
+ 
+
+use Illuminate\Support\Facades\Request;
+
+ 
+
+class User
+
+{
+
+  public function __construct(
+
+    public readonly string $name,
+
+    public readonly string $email,
+
+    public readonly int $chiffrePrefereEntre_1_et_100,
+
+  )
+
+  {
+
+  }
+
+ 
+
+  /**
+
+   * Je viens créer mon POPO depuis un objet Request de Laravel.
+
+   * La classe, non ? C'est français.
+
+   *
+
+   * @return self
+
+   **/
+
+  public static function makeFromRequest(Request $request): self
+
+  {
+
+    return new self(
+
+      name: $request->get('name'),
+
+      email: $request->get('email'),
+
+      chiffrePrefereEntre_1_et_100: 42
+
+    )
+
+  }
+
+ 
+
+  /**
+
+   * Ici je viens centraliser un aspect vital
+
+   * de cette structure de données me permettant
+
+   * de rendre le code bien plus lisible.
+
+   *
+
+   * @return bool
+
+   **/
+
+  public function isNeufTrois(): bool
+
+  {
+
+    return $this->chiffrePrefereEntre_1_et_100 === 93;
+
+  }
+
+}
+```
+
+Ce qui rendra notre petit `if` plus haut bien plus lisible.
+
+Parmi les avantages que je n'ai pas nommé, on peut citer le typage _(voir le paramètre passé à `bidouille()`)_
+
+Le popo peut servir aussi bien de données structurées que d'actions spécifiques. Par exemple, si dans un contrôleur vous avez une opération complexe à faire et qui rend les choses bien moins lisibles, eh bien le Popo se fera un plaisir d'extraire cette opération et vous n'aurez qu'à l'invoquer !

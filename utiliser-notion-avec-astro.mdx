@@ -1,0 +1,24 @@
+---
+draft: true
+layout: "../../layouts/PostLayout.astro"
+title: "Utiliser Notion pour alimenter les données d'un site avec Astro"
+publishDate: 2023/01/18
+description: "Afficher les données d'une page Notion sur votre site"
+author: "Rachid Sebbouh"
+tags: ["frontend", "memo"]
+---
+Si vous avez visité la page [Veille](/veille), vous avez pu apercevoir les fruits de cet article.
+
+Je vais vous expliquer comment brancher facilement une base de données depuis [Notion](https://notion.so) vers un site Astro.
+
+## Préalables
+
+Avant toute chose, il va falloir vous créer une clé d'intégration afin de pouvoir communiquer avec Notion.
+
+Pour se faire, rendez vous sur [cette page](www.google.com) et créez votre première intégration.
+
+Une fois ceci fait, rendez-vous sur la page Notion que vous souhaitez partager. Pour ma part, il s'agit d'une base de données que j'ai créé sur Notion.
+
+## Installer le client Notion
+
+`npm i notionshq@client-node`

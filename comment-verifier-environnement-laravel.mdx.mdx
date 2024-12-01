@@ -1,0 +1,46 @@
+---
+layout: "../../layouts/PostLayout.astro"
+title: "Comment vérifier que son application est en production"
+publishDate: 2022/09/08
+description: "Mes notes sur les différentes façons de consulter, dans le code, l'environnement où s'exécute votre application Laravel."
+author: "Rachid Sebbouh"
+tags: ["memo", "laravel"]
+---
+Il peut arriver, pour diverses raisons, qu'il faille vérifier si on est dans un environnement donné lorsque le code s'exécute.
+
+Je vous partage mes notes sur les différentes façons d'effectuer ce genre de vérification à peu près n'importe où dans votre application Laravel.
+
+## Dans les vues Blade
+
+Il y a plusieurs manières de vérifier l'environnement dans une vue Blade.
+
+La première façon avec `@production` qui permet de n'afficher du contenu qu'en production.
+La seconde avec `@env()` qui permet de vérifier plusieurs environnements différents à la fois.
+
+```blade
+@production
+    <p>Ceci ne s'affichera qu'en: APP_ENV='production'</p>
+@endproduction
+```
+
+```blade
+@env(['local', 'staging'])
+    <p>Ceci ne s'affichera qu'en: APP_ENV='local' ou APP_ENV='staging'</p>
+@endenv
+```
+
+_[Lien vers la documentation](https://laravel.com/docs/9.x/blade#environment-directives)_
+
+## Ailleurs dans le code
+
+Pour faire cette vérification ailleurs dans votre code PHP, voici les différentes façons de procéder :
+
+```php
+if (App::environment(['local', 'staging'])) {
+    // Ce code ne s'executera qu'en local et staging
+}
+ 
+if (app()->environment(['local', 'staging'])) {
+    // Ce code ne s'executera qu'en local et staging
+}
+```

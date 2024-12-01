@@ -1,0 +1,178 @@
+---
+layout: "../../layouts/PostLayout.astro"
+title: "Configurer Webpack pour utiliser Storybook avec Laravel, Inertia et TailwindCSS"
+publishDate: 2022/04/12
+description: "Utiliser Storybook avec Inertia et Tailwind sous Webpack n'est pas une mince affaire. Dans cet article je vous montre une configuration qui va pouvoir vous aider."
+author: "Rachid Sebbouh"
+tags: ["frontend", "laravel"]
+---
+Si vous souhaitez utiliser Storybook pour concevoir vos composants avec Laravel Jetstream, Inertia et TailwindCSS et que votre configuration est sous Webpack, vous rencontrerez peut être quelques soucis de configuration.
+
+C'est en tout cas ce qui m'est arrivé et dans cet article je souhaite vous partager le fruit d'heures de recherche à débugger pour pouvoir faire fonctionner le tout, c'est parti !
+
+_Note: si vous démarrez un nouveau projet, songez plutôt à utiliser [Vite](https://vitejs.dev/) à la place de Webpack._
+
+## Avant-propos
+
+Ce billet a été écrit en utilisant la stack suivante :
+
+- Laravel v9.2
+- Jetstream v2.7
+- Inertia v0.11
+- TailwindCSS v3
+- Storybook v6.4.21
+
+## Installer Storybook
+
+### `npx sb init`
+
+Cette commande va aller lire les dépendances du `package.json` pour déterminer quel scripts Storybook va mettre en place pour se lancer. Elle va aussi installer d’autres dépendances, mettre en place une configuration de base et saupoudrer notre appli de quelques [stories](https://storybook.js.org/docs/ember/get-started/whats-a-story) d'exemple.
+
+> `npx` est une commande qui permet d’exécuter une lib sans devoir l’installer. Dans notre cas par exemple, on va exécuter `sb` pour initialiser storybook.
+>
+> Sans ce `npx` il aurait fallu d’abord installer `sb` (localement ou globalement). C’est pratique mais il est important de bien comprendre ce que l'on execute.
+
+Après son installation, si on lance Storybook on peut tomber sur cette erreur:
+
+```bash
+info @storybook/vue3 v6.4.21
+info
+info => Loading presets
+info => Using implicit CSS loaders
+info => Using prebuilt manager
+info => Using default Webpack4 setup
+ERR! TypeError: Cannot read property 'NormalModule' of undefined
+```
+
+C’est donc un moment propice pour pleurer car nous allons devoir nous salir les mains dans du Webpack.
+
+## Configurer la version de Webpack
+
+Dans le message d’erreur précédent, il faudra d’abord corriger ceci `info => Using default Webpack4 setup` et indiquer à Storybook que nous utilisons Webpack5.
+
+Pour ce faire, il faut d’abord ajouter de nouvelles dépendances dans notre `package.json`:
+
+```json
+"@storybook/manager-webpack5": "^6.4.21",
+"@storybook/builder-webpack5": "^6.4.21",
+```
+
+Ensuite, on déclare quel builder utiliser à Storybook en ouvrant le fichier `.storybook/main.js` et dans l’objet `module.exports` on ajoute la nouvelle clé suivante:
+
+```jsx
+"core": {
+    "builder": "webpack5",
+  },
+```
+
+On lance un petit `npm install && npm run storybook` et cette fois-ci tout devrait bien se passer.
+
+## Créer sa première story
+
+Pour s’en assurer on va créer une story pour un composant de Jetstream: le bouton qui se trouve dans `resources/js/Jetstream/Button.vue`
+
+Dans le dossier `stories` on modifie le fichier `Button.stories.js` et on le remplace par ceci:
+
+```jsx
+import Button from '@/Jetstream/Button.vue';
+
+export default {
+  title: 'Jetstream/Button',
+  component: Button,
+};
+
+const Template = (args) => ({
+  components: { Button },
+  setup() {
+    return { args };
+  },
+  template: '<Button v-bind="args">Test Button</Button>',
+});
+
+export const MyButton = Template.bind({});
+```
+
+Dans mon cas, Storybook affichait un message d’erreur disant qu’il ne trouvait aucune story. J’ai redémarré Storybook et paf, un nouveau message d’erreur:
+
+```plaintext
+ModuleNotFoundError: Module not found: Error: Can't resolve '@/Jetstream/Button.vue' in '/app/stories'
+```
+
+Les alias ne semblent pas être pris en compte par Storybook. C’est à nouveau un bon moment pour pleurer car nous retournons configurer Webpack.
+
+## Corriger les alias
+
+Jetstream utilise un alias pour importer les fichiers javascript ainsi lorsque l’on tape `@` on fait en fait référence à `resources/js` très pratique pour mieux organiser son dossier Javascript. Vous pouvez voir la déclaration de cet alias dans le fichier à la racine du projet `webpack.mix.js`
+
+Pour indiquer à Storybook d’utiliser le même alias, j’ai rajouté dans `.storybook/main.js` la clé `webpackFinal` juste après `core` qu’on a ajouté à l’étape 3:
+
+```bash
+"webpackFinal": async (config) => {
+      config.resolve = {
+          ...config.resolve,
+          alias: {
+              ...config.resolve?.alias,
+              '@': '../resources/js',
+          }
+      }
+      return config;
+  }
+```
+
+> S’il y a une meilleure façon de faire, merci de me contacter par Twitter et je ferai la correction ! Mes connaissances de Webpack sont extrêmement limitées.
+> 
+
+Lorsque l’on relance Storybook ça marche ... presque.
+
+La story s’affiche, on voit le bouton mais il n’a aucun style. Tailwind ne semble pas avoir été invité. Re-pleurer.
+
+## Importer Tailwind
+
+Après de nombreuses recherches, j’ai découvert qu’il fallait rajouter une étape de postcss dans le `.storybook/main.js` alors hop, on repart sur notre fichier, et dans la clé `webpackFinal` que nous avons ajouté précédemment, on va rajouter cette instruction:
+
+```jsx
+"webpackFinal": async (config) => {
+      config.module.rules.push({
+          test: /\.css$/,
+          use: [
+              {
+                  loader: 'postcss-loader',
+                  options: {
+                      postcssOptions: {
+                          implementation: 'postcss',
+                          plugins: {
+                              tailwindcss,
+                          }
+                      },
+                  },
+              },
+          ],
+          include: path.resolve(__dirname, '../'),
+      });
+      config.resolve = {
+          ...config.resolve,
+          alias: {
+              ...config.resolve?.alias,
+              '@': '../resources/js',
+          }
+      }
+      return config;
+  }
+```
+
+PS: Il va falloir importer `tailwindcss` et `path` donc en haut de ce fichier rajouter les lignes suivantes:
+
+```jsx
+const path = require('path');
+const tailwindcss = require('../tailwind.config');
+```
+
+Enfin, dans le fichier `.storybook/preview.js` on importe le css (non compilé) de notre app:
+
+```jsx
+import '../resources/css/app.css';
+```
+
+On relance Storybook et tout devrait aller mieux!
+
+Retrouvez les fichiers complets sur ce [gist](https://gist.github.com/rachids/81ad6075f99a76acb37a9f781fbd3ee3).

@@ -1,0 +1,98 @@
+---
+spotlight: true
+layout: "../../layouts/PostLayout.astro"
+title: "L'essentiel pour débuter avec les templates Blade"
+publishDate: 2023/05/19
+description: "Ce que vous devez savoir pour démarrer avec les templates Blade."
+author: "Rachid Sebbouh"
+tags: ["laravel", "memo"]
+draft: false
+---
+Ce guide est un condensé des directives principales à connaître pour débuter avec Blade.
+
+## Conditions
+
+Les conditions permettent d'afficher un contenu en fonction du résultat d'une expression.
+
+```blade
+@if ($isDay === true)
+    <p>Bonjour!</p>
+@else
+    <p>Bonsoir!</p>
+@endif
+```
+
+## Variables
+
+La syntaxe pour afficher des variables avec Blade est à l'aide d'une double accolade :
+
+```blade
+<p>{{ $user->name }}</p>
+```
+
+## Boucles
+
+Répéter l'affichage d'un contenu en fonction d'un array ou d'une collection
+
+```blade
+@foreach($users as $user)
+    <p>{{ $user->name }}</p>
+@endforeach
+```
+
+Il est aussi possible d'afficher un message lorsque les données sont vides :
+
+```blade
+@forelse($users as $user)
+    <p>{{ $user->name }}</p>
+@empty
+    <p>Aucun utilisateur trouvé.</p>
+@endforelse
+```
+
+## Héritage des templates
+
+Vous pouvez utiliser un template de base et l'étendre à vos vues pour avoir un layout prédéfini.
+
+Le layout est divisé en sections nommées. On utilise `@yield('nom de la section')` pour choisir l'endroit où il affichera les éléments des vues qui l'étendent.
+Exemple :
+
+**le layout:**
+
+```blade
+<main>
+    @yield('content')
+</main>
+```
+
+**la vue qui l'étend:**
+
+```blade
+@extends('layouts.landing')
+
+@section('content')
+    <p>Contenu de la vue</p>
+@endsection
+```
+
+**le résultat final dans le navigateur:**
+
+```blade
+<main>
+    <p>Contenu de la vue</p>
+</main>
+```
+
+## Inclusion de template
+
+Il est possible d'inclure une template Blade comme ceci:
+
+```blade
+@include('partials.alert')
+```
+
+&nbsp;
+
+---
+
+[Consulter la documentation pour approfondir le sujet](https://laravel.com/docs/master/blade#main-content).
